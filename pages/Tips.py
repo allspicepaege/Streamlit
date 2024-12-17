@@ -11,25 +11,29 @@ st.write("""Загрузи файл _tips.csv_ с данными \n
          
 https://raw.githubusercontent.com/mwaskom/seaborn-data/master/tips.csv""")
 
-path = 'https://raw.githubusercontent.com/mwaskom/seaborn-data/master/tips.csv'
-tips_etalon = pd.read_csv(path)
+@st.cache_data
+def upload_etalon_files():
+    path = 'https://raw.githubusercontent.com/mwaskom/seaborn-data/master/tips.csv'
+    tips_etalon = pd.read_csv(path)
+    return tips_etalon
 
-uploaded_file = st.sidebar.file_uploader('# Загрузи CSV файл', type='csv')
-
-if uploaded_file is not None:
-    try:
-        tips = pd.read_csv(uploaded_file)
-        if tips_etalon.shape == tips.shape:
-            st.write('Файл успешно загружен')
-            st.write(tips.head(5))
-        else:
-            st.sidebar.write(f'Загружен некорректный файл {uploaded_file.name}')
+@st.cache_data
+def upload_our_files(etalon, uploaded_file):
+    if uploaded_file is not None:
+        try:
+            tips = pd.read_csv(uploaded_file)
+            if etalon.shape == tips.shape:
+                st.write('Файл успешно загружен')
+                st.write(tips.head(5))
+                return tips
+            else:
+                st.sidebar.write(f'Загружен некорректный файл {uploaded_file.name}')
+                st.stop()
+        except:
+            st.sidebar.write(f'Произошла ошибка при загрузке файла {uploaded_file.name}')
             st.stop()
-    except:
-        st.sidebar.write(f'Произошла ошибка при загрузке файла {uploaded_file.name}')
+    else:
         st.stop()
-else:
-    st.stop()
 
 def save_chart(file_name, number):
     if not os.path.exists('save_charts'):
@@ -39,7 +43,11 @@ def save_chart(file_name, number):
     with open(fn, 'rb') as img:
         download_button = st.sidebar.download_button(label=f'Скачать график №{number}', 
                     data=img, file_name=file_name)
-        
+
+tips_etalon = upload_etalon_files()
+file = st.sidebar.file_uploader('# Загрузи CSV файл', type='csv')
+tips = upload_our_files(tips_etalon, file)
+
 start = pd.to_datetime('2023-01-01')
 end = pd.to_datetime('2023-01-31')
 tips['time_order'] = start + pd.to_timedelta(np.random.randint(0, (end - start).days + 1, size=len(tips)), unit='D')
